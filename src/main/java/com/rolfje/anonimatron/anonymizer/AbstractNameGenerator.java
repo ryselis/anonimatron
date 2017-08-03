@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
@@ -436,4 +437,10 @@ public abstract class AbstractNameGenerator implements Anonymizer {
 		generatedNames.add(name);
 		return name;
 	}
+
+	@Override
+	public Synonym anonymize(Object from, int size, ResultSet resultSet) {
+		return anonymize(from, size);
+	}
+
 }

@@ -1,6 +1,10 @@
 package com.rolfje.anonimatron.anonymizer;
 
 
+import com.rolfje.anonimatron.synonyms.Synonym;
+
+import java.sql.ResultSet;
+
 public abstract class AbstractElevenProofAnonymizer implements Anonymizer {
 
 	protected int[] add(int[] digits, int number) {
@@ -77,4 +81,10 @@ public abstract class AbstractElevenProofAnonymizer implements Anonymizer {
 		}
 		return elevenProof;
 	}
+
+	@Override
+	public Synonym anonymize(Object from, int size, ResultSet resultSet) {
+		return anonymize(from, size);
+	}
+
 }

@@ -3,6 +3,8 @@ package com.rolfje.anonimatron.anonymizer;
 import com.rolfje.anonimatron.synonyms.StringSynonym;
 import com.rolfje.anonimatron.synonyms.Synonym;
 
+import java.sql.ResultSet;
+
 class EmailAddressAnonymizer implements Anonymizer {
 	private static final String EMAIL_DOMAIN = "@example.com";
 	private static final String TYPE = "EMAIL_ADDRESS";
@@ -36,7 +38,13 @@ class EmailAddressAnonymizer implements Anonymizer {
 	}
 
 	@Override
+	public Synonym anonymize(Object from, int size, ResultSet resultSet) {
+		return anonymize(from, size);
+	}
+
+	@Override
 	public String getType() {
 		return TYPE;
 	}
+
 }

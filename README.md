@@ -1,5 +1,7 @@
 # Anonimatron
 
+This is a forked project with some hacky capabilities
+
 No patience? Visit the [Anonimatron official homepage](https://realrolfje.github.io/anonimatron/ "Anonimatron"), download the latest version, unzip it and run `anonimatron.sh` or `anonimatron.bat`.
 
 ### Table of contents

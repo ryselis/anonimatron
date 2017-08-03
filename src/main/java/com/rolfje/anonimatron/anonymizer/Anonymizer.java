@@ -1,6 +1,7 @@
 package com.rolfje.anonimatron.anonymizer;
 
 import java.sql.Date;
+import java.sql.ResultSet;
 
 import com.rolfje.anonimatron.synonyms.Synonym;
 
@@ -37,5 +38,6 @@ public interface Anonymizer {
 	 * @return a {@link Synonym}
 	 */
 	Synonym anonymize(Object from, int size);
+	Synonym anonymize(Object from, int size, ResultSet resultSet);
 
 }

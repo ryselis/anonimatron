@@ -1,5 +1,6 @@
 package com.rolfje.anonimatron.anonymizer;
 
+import java.sql.ResultSet;
 import java.util.UUID;
 
 import com.rolfje.anonimatron.synonyms.StringSynonym;
@@ -35,7 +36,13 @@ class UUIDAnonymizer implements Anonymizer {
 	}
 
 	@Override
+	public Synonym anonymize(Object from, int size, ResultSet resultSet) {
+		return anonymize(from, size);
+	}
+
+	@Override
 	public String getType() {
 		return TYPE;
 	}
+
 }

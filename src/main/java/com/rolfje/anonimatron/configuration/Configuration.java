@@ -113,6 +113,8 @@ public class Configuration {
 		List<String> anonymizers = new ArrayList<String>();
 		anonymizers.add("my.demo.java.SmurfAnonymizer");
 		anonymizers.add("org.sf.anonimatron.CommunityAnonymizer");
+		anonymizers.add("com.esperonus.anonimatrons.SubjectContactPhoneNumberAnonymizer");
+		anonymizers.add("com.esperonus.anonimatrons.SubjectTitleAnonymizer");
 		conf.setAnonymizerClasses(anonymizers);
 
 		List<Table> tables = new ArrayList<Table>();

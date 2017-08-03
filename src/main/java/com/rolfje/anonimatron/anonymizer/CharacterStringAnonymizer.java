@@ -1,5 +1,6 @@
 package com.rolfje.anonimatron.anonymizer;
 
+import java.sql.ResultSet;
 import java.util.Random;
 
 import com.rolfje.anonimatron.synonyms.StringSynonym;
@@ -42,6 +43,11 @@ public class CharacterStringAnonymizer implements Anonymizer {
 		stringSynonym.setTo(to);
 
 		return stringSynonym;
+	}
+
+	@Override
+	public Synonym anonymize(Object from, int size, ResultSet resultSet) {
+		return anonymize(from, size);
 	}
 
 }

@@ -25,4 +25,5 @@ public class DigitStringAnonymizer extends AbstractElevenProofAnonymizer {
 		return stringSynonym;
 	}
 
+
 }

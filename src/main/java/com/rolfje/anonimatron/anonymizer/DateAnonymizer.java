@@ -4,6 +4,7 @@ import com.rolfje.anonimatron.synonyms.DateSynonym;
 import com.rolfje.anonimatron.synonyms.Synonym;
 
 import java.sql.Date;
+import java.sql.ResultSet;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -42,6 +43,11 @@ class DateAnonymizer implements Anonymizer {
 		}
 
 		return s;
+	}
+
+	@Override
+	public Synonym anonymize(Object from, int size, ResultSet resultSet) {
+		return anonymize(from, size);
 	}
 
 	@Override

@@ -1,5 +1,6 @@
 package com.rolfje.anonimatron.configuration;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -8,6 +9,8 @@ public class Table {
 	private String name;
 	private List<Column> columns;
 	private List<Discriminator> discriminators;
+	private List<Join> joins;
+	private boolean deleteItems;
 	
 	// Used for progress monitoring
 	private long numberOfRows;
@@ -52,4 +55,19 @@ public class Table {
 		this.numberOfRows = numberOfRows;
 	}
 
+	public boolean getDeleteItems() {
+		return deleteItems;
+	}
+
+	public void setDeleteItems(boolean deleteItems) {
+		this.deleteItems = deleteItems;
+	}
+
+	public List<Join> getJoins() {
+		return joins;
+	}
+
+	public void setJoins(List<Join> joins) {
+		this.joins = joins;
+	}
 }

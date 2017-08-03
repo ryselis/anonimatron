@@ -1,5 +1,6 @@
 # Created by .ignore support plugin (hsz.mobi)
 .idea
 anonimatron.log
-anonimatron.iml
 target
+/out
+src/main/java/META-INF/

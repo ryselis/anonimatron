@@ -1,6 +1,7 @@
 package com.rolfje.anonimatron.anonymizer;
 
 import java.io.File;
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -40,6 +41,8 @@ public class AnonymizerService {
 		registerAnonymizer(new CharacterStringAnonymizer());
 		registerAnonymizer(new CharacterStringPrefetchAnonymizer());
 		registerAnonymizer(new DateAnonymizer());
+		registerAnonymizer(new PhoneNumberAnonymizer());
+		registerAnonymizer(new SubjectContactPhoneNumberAnonymizer());
 
 		// Default anonymizers for plain Java objects. If we really don't
 		// know or care how the data looks like.
@@ -89,6 +92,20 @@ public class AnonymizerService {
 		}
 		return synonym;
 	}
+
+	public Synonym anonymize(String type, Object from, int size, ResultSet resultSet) {
+		if (from == null) {
+			return new NullSynonym(type);
+		}
+
+		Synonym synonym = getFromCache(type, from);
+		if (synonym == null) {
+			synonym = getAnonymizer(type).anonymize(from, size, resultSet);
+			putInCache(synonym);
+		}
+		return synonym;
+	}
+
 
 	/**
 	 * Reads the synonyms from the specified file and (re-)initializes the
@@ -178,6 +195,7 @@ public class AnonymizerService {
 				// Log this unknown type
 				LOG.warn("Unknown type '" + type
 						+ "', trying fallback to default anonymizer for this type.");
+				LOG.warn(String.join("", customAnonymizers.keySet()));
 				seenTypes.add(type);
 			}
 

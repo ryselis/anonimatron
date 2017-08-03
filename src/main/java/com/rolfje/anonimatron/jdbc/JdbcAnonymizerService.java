@@ -16,15 +16,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import com.rolfje.anonimatron.configuration.*;
 import org.apache.log4j.Logger;
 import org.apache.log4j.NDC;
 
 import com.rolfje.anonimatron.anonymizer.AnonymizerService;
 import com.rolfje.anonimatron.anonymizer.Prefetcher;
-import com.rolfje.anonimatron.configuration.Column;
-import com.rolfje.anonimatron.configuration.Configuration;
-import com.rolfje.anonimatron.configuration.Discriminator;
-import com.rolfje.anonimatron.configuration.Table;
 import com.rolfje.anonimatron.progress.Progress;
 import com.rolfje.anonimatron.progress.ProgressPrinter;
 import com.rolfje.anonimatron.synonyms.Synonym;
@@ -142,7 +139,7 @@ public class JdbcAnonymizerService {
 					Object databaseColumnValue, int columnDisplaySize) throws SQLException {
 				Synonym synonym = anonymizerService.anonymize(columnType,
 					databaseColumnValue,
-					columnDisplaySize);
+					columnDisplaySize, results);
 
 				if (results.getConcurrency() == ResultSet.CONCUR_UPDATABLE) {
 					// Update the contents of this row with the given Synonym
@@ -168,17 +165,19 @@ public class JdbcAnonymizerService {
 
 	private void processTableColumns(Table table, final ColumnWorker columnWorker, int resultSetType, int resultSetConcurrency) {
 		// Create an updatable resultset for the rows.
+
 		Statement statement = null;
 		ResultSet results = null;
 		long rowsleft = table.getNumberOfRows();
 		try {
 			NDC.push("Table '" + table.getName() + "'");
 			String select = getSelectStatement(table);
-			LOG.debug(select);
+			LOG.info(select);
 
 			statement = connection.createStatement(resultSetType, resultSetConcurrency);
 			statement.execute(select);
 			results = statement.getResultSet();
+			LOG.info("Concurrency: " + Integer.toString(results.getConcurrency()));
 			ResultSetMetaData resultsMetaData = results.getMetaData();
 
 			if (results.getConcurrency() != resultSetConcurrency) {
@@ -187,41 +186,54 @@ public class JdbcAnonymizerService {
 
 			boolean processNextRecord = true;
 			while (results.next() && processNextRecord) {
-				Collection<Column> columnsAsList = getDiscriminatedColumnConfiguration(table, results);
+				if (table.getDeleteItems()) {
+					if (results.getConcurrency() == ResultSet.CONCUR_UPDATABLE) {
+						try {
+							results.deleteRow();
+						} catch (SQLException sqlExc){
+							LOG.warn("SQL exception while processing table " + table.getName() + ": "
+									+ sqlExc.toString());
+						}
+					}
+				} else {
+					Collection<Column> columnsAsList = getDiscriminatedColumnConfiguration(table, results);
 
 				/*
 				 * Assume ready. if any of the calls to the worker indicate that
 				 * we need to continue, we'll fetch the next result (see below(
 				 */
-				processNextRecord = false;
+					processNextRecord = false;
 
-				for (Column column : columnsAsList) {
-					// Build a synonym for each column in this row
-					NDC.push("Column '" + column.getName() + "'");
+					for (Column column : columnsAsList) {
+						if (column.getType().startsWith("NOOP")) {
+							continue;
+						}
+						// Build a synonym for each column in this row
+						NDC.push("Column '" + column.getName() + "'");
 
-					String columnType = column.getType();
-					if (columnType == null) {
-						columnType = resultsMetaData.getColumnClassName(results.findColumn(column.getName()));
-					}
+						String columnType = column.getType();
+						if (columnType == null) {
+							columnType = resultsMetaData.getColumnClassName(results.findColumn(column.getName()));
+						}
 
-					NDC.push("Type '" + columnType + "'");
+						NDC.push("Type '" + columnType + "'");
 
-					Object databaseColumnValue = results.getObject(column.getName());
-					int columnDisplaySize = resultsMetaData.getColumnDisplaySize(results.findColumn(column.getName()));
+						Object databaseColumnValue = results.getObject(column.getName());
+						int columnDisplaySize = resultsMetaData.getColumnDisplaySize(results.findColumn(column.getName()));
 
 					/* If any call returns true, process the next record. */
-					processNextRecord = columnWorker.processColumn(results, column, columnType, databaseColumnValue, columnDisplaySize)
-							|| processNextRecord;
+						processNextRecord = columnWorker.processColumn(results, column, columnType, databaseColumnValue, columnDisplaySize)
+								|| processNextRecord;
 
-					NDC.pop(); // type
-					NDC.pop(); // column
+						NDC.pop(); // type
+						NDC.pop(); // column
+					}
+
+					// Do not update for read-only resultsets
+					if (resultSetConcurrency == ResultSet.CONCUR_UPDATABLE) {
+						results.updateRow();
+					}
 				}
-
-				// Do not update for read-only resultsets
-				if (results.getConcurrency() == ResultSet.CONCUR_UPDATABLE) {
-					results.updateRow();
-				}
-
 				rowsleft--;
 				progress.incItemsCompleted(1);
 			}
@@ -233,10 +245,9 @@ public class JdbcAnonymizerService {
 			progress.incItemsCompleted(rowsleft);
 
 			if (!processNextRecord) {
-				LOG.debug("The Anonimizer service has indicated that it can skip the rest of table " 
-			               + table.getName() + " in this pass.");
+				LOG.debug("The Anonimizer service has indicated that it can skip the rest of table "
+						+ table.getName() + " in this pass.");
 			}
-
 		} catch (Exception e) {
 			LOG.fatal("Anonymyzation stopped because of fatal error.", e);
 			throw new RuntimeException(e);
@@ -331,6 +342,8 @@ public class JdbcAnonymizerService {
 		}
 	}
 
+
+
 	private String getSelectStatement(Table table) throws SQLException {
 		Set<String> columnNames = new HashSet<String>();
 		for (Column column : table.getColumns()) {
@@ -347,9 +360,7 @@ public class JdbcAnonymizerService {
 		String primaryKeys = "";
 		while (results.next()) {
 			String columnName = results.getString("COLUMN_NAME");
-			if (!columnNames.contains(columnName)) {
-				primaryKeys += columnName + ", ";
-			}
+			primaryKeys += columnName + ", ";
 		}
 		results.close();
 
@@ -367,6 +378,15 @@ public class JdbcAnonymizerService {
 
 		select = select.substring(0, select.lastIndexOf(", "));
 		select += " from " + table.getName();
+
+		if (table.getJoins() != null) {
+			LOG.info("Table " + table.getName() + " has " + Integer.toString(table.getJoins().size()) + " joins");
+			for (Join join : table.getJoins()) {
+				select += " LEFT JOIN " + join.getTableName() + " ON " + join.getFromColumn() + "=" + join.getToColumn();
+			}
+		} else {
+			LOG.info("Table " + table.getName() + " has null joins");
+		}
 		return select;
 	}
 
